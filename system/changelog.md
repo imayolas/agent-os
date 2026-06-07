@@ -16,6 +16,7 @@ This file is mandatory: agents may not modify `system/` files without logging th
 - Authored the `onboard` skill and the previously-missing `dream-instance` / `dream-system` skills under `.claude/skills/`.
 - Sanitized `.mcp.json` into `.mcp.json.example` and gitignored the real config.
 - Standardized the project name on "Agent OS" and rewrote the README.
+- Removed the "Instance Health Check (Do This First)" section from `CLAUDE.md`. It was a relic of an rsync-based persistence model where `instance/` could silently lose data; with git-tracked state the file-count tripwire no longer earns its place.
 
 **Why:** Preparing the framework to be shared publicly as a standalone, project-agnostic starter. The goal is that a fresh clone runs cleanly with no dead paths, no private data, and a guided onboarding entry point.
 

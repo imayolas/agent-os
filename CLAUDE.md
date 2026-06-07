@@ -83,16 +83,6 @@ Intelligence files, strategy docs, and prior cycle conclusions create anchoring 
 
 **The meta-improve step must include a cognitive discipline check:** "Did I anchor on intelligence this cycle instead of reasoning from data? Did I dismiss contradictory evidence? Did I see the problem from only one angle?" If the answer to any of these is yes, that is a system failure worth flagging and correcting.
 
-## Instance Health Check (Do This First)
-
-Before starting any cycle, verify `instance/` is intact:
-
-```bash
-find instance -type f | wc -l
-```
-
-A healthy deployment has **at least 10 files**. If the count is lower, `instance/` has lost data — do NOT start the cycle. Recover from git history: `git log -- instance/` to find the last good commit, then `git checkout <commit> -- instance/` to restore.
-
 ## Dream Cadence Check (Do This First)
 
 At the start of every cycle, check whether a monthly dream is overdue. If `instance/dreams/log.md` is missing, or the most recent `## Dream YYYY-MM-DD — instance` or `## Dream YYYY-MM-DD — system` entry is more than 30 days old, nudge the user — once, briefly — before doing anything else:
