@@ -1,0 +1,11 @@
+# Real MCP config — contains secrets/local paths. Use .mcp.json.example as the template.
+.mcp.json
+
+# Local Claude Code overrides
+.claude/settings.local.json
+
+# OS / editor cruft
+.DS_Store
+*.swp
+.idea/
+.vscode/

@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+"""
+Cross-project status board for Agent OS.
+
+Greps frontmatter across instance/agents/*/projects/*.md and prints a grouped
+table by agent, by status. Frontmatter is the single source of truth — this
+script maintains no index of its own.
+
+Schema (see system/artifact-rules.md):
+  Required: title, status, owner, started, updated, description
+  Optional: blocked_on (plus any project-specific fields)
+
+Usage:
+  bin/status                 # full board
+  bin/status --agent NAME    # filter to one agent
+  bin/status --status STATUS # filter to one status
+"""
+
+import argparse
+import re
+import sys
+from pathlib import Path
+
+
+STATUS_ORDER = ["active", "paused", "done"]
+
+REQUIRED_FIELDS = {"title", "status", "owner", "started", "updated", "description"}
+
+
+def repo_root() -> Path:
+    return Path(__file__).resolve().parent.parent
+
+
+def parse_frontmatter(path: Path) -> dict | None:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    if not text.startswith("---"):
+        return None
+    end = text.find("\n---", 3)
+    if end == -1:
+        return None
+    block = text[3:end].strip("\n")
+    meta: dict[str, str] = {}
+    for line in block.splitlines():
+        m = re.match(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", line)
+        if not m:
+            continue
+        key, value = m.group(1), m.group(2).strip()
+        if (value.startswith('"') and value.endswith('"')) or (
+            value.startswith("'") and value.endswith("'")
+        ):
+            value = value[1:-1]
+        meta[key] = value
+    return meta
+
+
+def collect_projects(root: Path) -> list[dict]:
+    base = root / "instance" / "agents"
+    projects: list[dict] = []
+    for project_file in sorted(base.glob("*/projects/*.md")):
+        meta = parse_frontmatter(project_file)
+        agent_dir = project_file.parents[1].name
+        entry = {
+            "path": project_file.relative_to(root),
+            "agent_dir": agent_dir,
+            "meta": meta or {},
+            "valid": meta is not None
+            and REQUIRED_FIELDS.issubset(meta.keys())
+            and meta.get("owner") == agent_dir,
+        }
+        projects.append(entry)
+    return projects
+
+
+def status_sort_key(status: str) -> tuple[int, str]:
+    try:
+        return (STATUS_ORDER.index(status), status)
+    except ValueError:
+        return (len(STATUS_ORDER), status)
+
+
+def format_board(
+    projects: list[dict], agent_filter: str | None, status_filter: str | None
+) -> str:
+    by_agent: dict[str, list[dict]] = {}
+    invalid: list[dict] = []
+    for p in projects:
+        if not p["valid"]:
+            invalid.append(p)
+            continue
+        owner = p["meta"]["owner"]
+        if agent_filter and owner != agent_filter:
+            continue
+        if status_filter and p["meta"].get("status") != status_filter:
+            continue
+        by_agent.setdefault(owner, []).append(p)
+
+    lines: list[str] = []
+    for agent in sorted(by_agent.keys()):
+        lines.append("")
+        lines.append(f"── {agent} ".ljust(80, "─"))
+        agent_projects = by_agent[agent]
+        by_status: dict[str, list[dict]] = {}
+        for p in agent_projects:
+            by_status.setdefault(p["meta"].get("status", "?"), []).append(p)
+        for status in sorted(by_status.keys(), key=status_sort_key):
+            lines.append(f"  [{status}]")
+            items = sorted(
+                by_status[status], key=lambda p: p["meta"].get("updated", "")
+            )
+            for p in items:
+                meta = p["meta"]
+                title = meta.get("title", p["path"].stem)
+                updated = meta.get("updated", "?")
+                blocked = meta.get("blocked_on")
+                suffix = f"  [blocked: {blocked}]" if blocked else ""
+                lines.append(f"    • {title}")
+                lines.append(f"        updated {updated}{suffix}")
+                lines.append(f"        {p['path']}")
+
+    if invalid and not (agent_filter or status_filter):
+        lines.append("")
+        lines.append("── invalid frontmatter ".ljust(80, "─"))
+        for p in invalid:
+            missing = sorted(REQUIRED_FIELDS - set(p["meta"].keys()))
+            owner = p["meta"].get("owner")
+            reason = []
+            if missing:
+                reason.append(f"missing: {', '.join(missing)}")
+            if owner and owner != p["agent_dir"]:
+                reason.append(f"owner/{owner} != dir/{p['agent_dir']}")
+            reason_str = "; ".join(reason) or "unparseable"
+            lines.append(f"  ! {p['path']}  ({reason_str})")
+
+    if not lines:
+        return "No projects match the given filters.\n"
+    return "\n".join(lines).lstrip("\n") + "\n"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--agent", help="Filter to a single agent (owner name)")
+    parser.add_argument("--status", help="Filter to a single status (e.g. active)")
+    args = parser.parse_args()
+
+    projects = collect_projects(repo_root())
+    if not projects:
+        print("No project files found.", file=sys.stderr)
+        return 1
+    sys.stdout.write(format_board(projects, args.agent, args.status))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
