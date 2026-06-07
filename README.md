@@ -2,7 +2,9 @@
 
 A persistent multi-agent framework built on Claude Code.
 
-AI conversations are stateless — every session starts from zero. **Agent OS** fixes this by using markdown files as persistent memory, turning ephemeral conversations into a continuous, evolving workflow. You define role-based agents, work in "cycles," and every cycle reads prior state and writes updated state back to this repo.
+AI conversations are stateless — every session starts from zero. **Agent OS** fixes this by using markdown files as persistent memory, turning ephemeral conversations into a continuous, evolving workflow.
+
+It's not one assistant — it's **an org you run as CEO.** You appoint a *lead* agent; the lead **delegates** to specialists, each working in its own focused context with its own memory, then reports decisions back to you. Work happens in "cycles," and every cycle reads prior state and writes updated state back to this repo.
 
 ## Get started
 
@@ -13,13 +15,24 @@ AI conversations are stateless — every session starts from zero. **Agent OS** 
    /onboard
    ```
 
-That's it. Onboarding explains how the system works, interviews you about what you want your first agent to do, and scaffolds it for you. It will also offer to remove the bundled `example-researcher` sample agent once you have a real one.
+That's it. Onboarding explains how the system works, interviews you about your mission, and scaffolds a squad — a lead plus its specialists — for you. The repo ships with a working **example squad** (a Marketing Director delegating to a Content Writer, SEO Analyst, and PPC Expert) so you can see the shape; onboarding adapts it to your domain or builds a new one and removes the example.
 
 > Prefer to read first? The full mechanics live in `CLAUDE.md` (the bootloader) and `system/` (the protocols).
 
 ## How it works
 
-- **Agents** are role-based personas (a Researcher, a Marketer, …) with an identity file, defined responsibilities, and their own memory. They live in `instance/agents/`.
+- **You are the CEO.** You're not modeled as an agent — you're the boss. You set direction, own the budget, approve what ships, and mostly talk to one *lead* agent.
+- **Agents** are role-based personas with an identity file, defined responsibilities, and their own memory, in `instance/agents/`. A **lead** (e.g. a Director) owns strategy and delegates; **specialists** do the deep work in their lane.
+- **Delegation** is the core move: the lead breaks a goal into briefs and spawns each specialist in a *fresh context* via Claude Code's Agent tool. The specialist does focused work, keeps its own memory, and returns a concise summary the lead integrates. Separation of concerns — not raw horsepower — is why a squad beats one do-everything agent. See `system/delegation-protocol.md`.
+
+```
+CEO (you)
+  └─ Marketing Director        ← the lead you talk to
+       ├─ Content Writer        ← delegated: drafts
+       ├─ SEO Analyst           ← delegated: research & briefs
+       └─ PPC Expert            ← delegated: paid campaigns
+```
+
 - **Cycles** are individual Claude Code conversations. Start one by saying *"New cycle for [Agent Name]"*. Each cycle reads prior state, does work, and writes updated state.
 - **Artifacts** are persistent markdown files — `state-of-mind.md` (current focus), `strategy.md`, `projects/` (active work), and `intelligence/` (durable knowledge) — that carry context across cycles.
 - **Skills** are knowledge packs loaded on demand (in `.claude/skills/`).

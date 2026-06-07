@@ -6,6 +6,19 @@ This file is mandatory: agents may not modify `system/` files without logging th
 
 ---
 
+## 2026-06-07 — Example squad + squad-oriented onboarding
+
+**What changed:**
+
+- Replaced the solo `example-researcher` agent with a generic **example marketing squad**: a Marketing Director (lead) that delegates to a Content Writer, SEO Analyst, and PPC Expert. Includes a worked example project showing the delegate → integrate loop, an example strategy doc, and an example intelligence file.
+- Reframed `CLAUDE.md`'s example-agent language and `instance/artifacts/state-of-mind.md` around the org model: **the user is the CEO**, the lead reports to them, specialists report to the lead.
+- Rewrote the `onboard` skill to teach squad-based delegation (CEO → lead → specialists) and to interview the user into designing a *team*, not a single agent.
+- Updated the README with the CEO/lead/specialist model and an org-chart diagram.
+
+**Why:** A single "researcher" agent is a cliché that hides the framework's core value — squad-based, delegated multi-agent work. The example now demonstrates the org chart and delegation flow that make Agent OS more than a stateful chatbot, and reinforces that the human operates as CEO.
+
+---
+
 ## 2026-06-07 — Public-release sanitization
 
 **What changed:**
